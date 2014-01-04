@@ -1,0 +1,13 @@
+{application, poolcat,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  gen_queue
+                 ]},
+  {mod, { poolcat_app, []}},
+  {env, []}
+ ]}.
