@@ -6,7 +6,7 @@ be used to limit the number of concurrency processing your task. In
 that case just spawning a worker process can't controll the system
 load. In other words, if you find a pattern like
 
-[!image](priv/poolcat.png)
+![image](priv/poolcat.png)
 
 then use poolcat.
 
