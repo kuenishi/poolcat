@@ -1,7 +1,7 @@
 {application, poolcat,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "Active worker pool with task queue in OTP manner"},
+  {vsn, "0.0.1"},
   {registered, []},
   {applications, [
                   kernel,
