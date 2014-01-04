@@ -4,8 +4,7 @@
 
 -callback init(any()) -> {ok, term()}.
 -callback handle_pop(term(), term()) -> ok.
-%% -callback handle_dropped(term(), term()) -> ok.
-%% -callback terminate(term()) -> ok.
+-callback terminate(term(), term()) -> ok.
 
 %% API
 -export([start_link/3]).
@@ -65,17 +64,17 @@ handle_info(timeout, #state{mod=Module,qname=QName,state=SubState0}=State) ->
             {ok,SubState} = Module:handle_pop(Task,SubState0),
             {noreply, State#state{state=SubState}, 0};
         {ok, stop} ->
-            {stop, normal, SubState0};
+            {stop, normal, State};
         {ok, {stop, Pid}} ->
             Pid ! {ok, ?MODULE},
-            {stop, normal, SubState0};
+            {stop, normal, State};
         {error, destroyed} ->
-            {stop, normal, SubState0}
+            {stop, normal, State}
     end.
 
 %% @private
-terminate(_Reason, _State) ->
-    ok.
+terminate(Reason, #state{mod=Module,state=SubState} = _State) ->
+    Module:terminate(Reason, SubState).
 
 %% @private
 code_change(_OldVsn, State, _Extra) ->

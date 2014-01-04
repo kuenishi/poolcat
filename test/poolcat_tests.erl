@@ -1,6 +1,7 @@
 -module(poolcat_tests).
 
--compile(export_all).
+-export([init/1, handle_pop/2, terminate/2]).
+
 -behaviour(poolcat_worker).
 
 -include_lib("eunit/include/eunit.hrl").
@@ -13,6 +14,9 @@ handle_pop({back,From}, State) ->
     {ok, State};
 handle_pop(noop, State) ->
     {ok, State}.
+
+terminate(_, _) ->
+    ok.
 
 -ifdef(TEST).
 
@@ -37,11 +41,17 @@ multi_test() ->
     ok = application:start(poolcat),
 
     {ok, Pid} = poolcat:create_pool(test, ?MODULE, 1, initdata),
+    {ok, Pid2} = poolcat:create_pool(test2, ?MODULE, 32, initdata),
 
     Num = 1024,
     [ok = poolcat:push_task(test, noop) ||
         _ <- lists:seq(0, Num)],
+    [ok = poolcat:push_task(test2, noop) ||
+        _ <- lists:seq(0, Num)],
+
     {ok, []} = poolcat:safe_destroy_pool(test, Pid),
+    {ok, []} = poolcat:safe_destroy_pool(test2, Pid2),
+
     ok = application:stop(poolcat),
     ok = application:stop(gen_queue).
 
