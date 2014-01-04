@@ -28,8 +28,11 @@ handle_pop(Task, State) ->
 
 2. create a pool
 
+When you run 16 workers
+
 ```erlang
-    {ok, Pid} = poolcat:create_pool(your_pool_name, {initstate, foo}),
+    {ok, Pid} = poolcat:create_pool(your_pool_name, your_pool_module,
+                                    16, {initstate, foo}),
 ```
 
 3. push your task and get it processed!
@@ -37,6 +40,8 @@ handle_pop(Task, State) ->
 ```erlang
     ok = poolcat:push_task(your_pool_name, {task, foo, bar}),
 ```
+
+See `test/poolcat_tests.erl` to know standard usage.
 
 
 License
