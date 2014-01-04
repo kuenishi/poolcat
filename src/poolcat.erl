@@ -1,7 +1,8 @@
 -module(poolcat).
 
 -export([create_pool/4, destroy_pool/2,
-         safe_destroy_pool/2, push_task/2]).
+         safe_destroy_pool/2,
+         push_task/2, status/1]).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -38,10 +39,18 @@ destroy_pool(Name, Pid) ->
 %% @doc ensure all task processed
 safe_destroy_pool(Name, Pid) ->
     NumChildren = count_children(Pid),
-    [gen_queue:push(Name, {stop, self()}) || _ <- lists:seq(0, NumChildren)],
-    [receive {ok, poolcat_worker} -> ok end || _ <- lists:seq(0, NumChildren)],
-    ok = supervisor:terminate_child(poolcat_sup, Pid),
-    {ok, []} = gen_queue:destroy_queue(Name).
+    %% [gen_queue:push(Name, {stop, self()}) || _ <- lists:seq(0, NumChildren)],
+    %% [receive {ok, poolcat_worker} -> ok end || _ <- lists:seq(0, NumChildren)],
+
+    Status = status(Name),
+    case {proplists:get_value(length,Status),
+          proplists:get_value(waiting,Status)} of
+        {0, NumChildren} ->
+            {ok, []} = destroy_pool(Name, Pid);
+        _ ->
+            timer:sleep(1024),
+            safe_destroy_pool(Name, Pid)
+    end.
             
 count_children(Pid) ->
     proplists:get_value(active, supervisor:count_children(Pid)).
@@ -49,3 +58,7 @@ count_children(Pid) ->
 -spec push_task(Name:: atom(), Task::term()) -> ok.
 push_task(Name, Task) ->
     gen_queue:push(Name, {task, Task}).
+
+-spec status(Name::atom() | pid()) -> proplists:proplist().
+status(Name) ->
+    gen_queue:info(Name).
