@@ -2,6 +2,7 @@
 
 -export([create_pool/4, destroy_pool/2,
          safe_destroy_pool/2,
+         safe_destroy_pool/3,
          push_task/2, status/1]).
 
 -include_lib("eunit/include/eunit.hrl").
@@ -38,6 +39,10 @@ destroy_pool(Name, Pid) ->
 
 %% @doc ensure all task processed
 safe_destroy_pool(Name, Pid) ->
+    safe_destroy_pool(Name, Pid, fun(_) -> ok end).
+
+safe_destroy_pool(Name, Pid, ProgressIndicator)
+  when is_function(ProgressIndicator) ->
     NumChildren = count_children(Pid),
     %% [gen_queue:push(Name, {stop, self()}) || _ <- lists:seq(0, NumChildren)],
     %% [receive {ok, poolcat_worker} -> ok end || _ <- lists:seq(0, NumChildren)],
@@ -47,11 +52,14 @@ safe_destroy_pool(Name, Pid) ->
           proplists:get_value(waiting,Status)} of
         {0, NumChildren} ->
             {ok, []} = destroy_pool(Name, Pid);
-        _ ->
+        Progress ->
+
+            catch ProgressIndicator(Progress),
+
             timer:sleep(1024),
-            safe_destroy_pool(Name, Pid)
+            safe_destroy_pool(Name, Pid, ProgressIndicator)
     end.
-            
+
 count_children(Pid) ->
     proplists:get_value(active, supervisor:count_children(Pid)).
 
