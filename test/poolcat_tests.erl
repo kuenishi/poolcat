@@ -31,6 +31,37 @@ start_stop_test() ->
             Other -> ?debugVal(Other), ?assert(false)
     after 1024 -> ?assert(false) end,
 
+    %ok = poolcat:sync_exec_task(test, noop),
+    poolcat:pause(Pid),
+
+    Ref = make_ref(),
+
+    ok = poolcat:async_exec_task(test, noop, Ref),
+    ok = poolcat:async_exec_task(test, noop, Ref),
+    ok = poolcat:async_exec_task(test, noop, Ref),
+    ok = poolcat:async_exec_task(test, noop, Ref),
+    ok = poolcat:async_exec_task(test, noop, Ref),
+    ok = poolcat:async_exec_task(test, noop, Ref),
+    ok = poolcat:async_exec_task(test, noop, Ref),
+
+    %% can't avoid first N+1 tasks executed
+    receive {Ref,_} -> ok end,
+    receive {Ref,_} -> ok end,
+
+    receive
+        {Ref,_} ->
+            ?assert(false)
+        after 1024 ->
+                ?debugHere,
+                ok
+        end,
+    poolcat:resume(Pid),
+    receive {Ref,_} -> ok end,
+    receive {Ref,_} -> ok end,
+    receive {Ref,_} -> ok end,
+    receive {Ref,_} -> ok end,
+    receive {Ref,_} -> ok end,
+
     {ok, []} = poolcat:safe_destroy_pool(test, Pid),
 
     ok = application:stop(poolcat),

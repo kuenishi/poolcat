@@ -3,7 +3,7 @@
 -behaviour(gen_server).
 
 -callback init(any()) -> {ok, term()}.
--callback handle_pop(term(), term()) -> ok.
+-callback handle_pop(term(), State0::term()) -> {ok, State1::term()}.
 -callback terminate(term(), term()) -> ok.
 
 %% API
@@ -54,6 +54,10 @@ handle_call(_, _From, State) ->
     {reply, error, State, 0}.
 
 %% @private
+handle_cast(pause, State) ->
+    {noreply, State};
+handle_cast(resume, State) ->
+    {noreply, State, 0};
 handle_cast(_Msg, State) ->
     {noreply, State, 0}.
 
@@ -63,6 +67,15 @@ handle_info(timeout, #state{mod=Module,qname=QName,state=SubState0}=State) ->
         {ok,{task, Task}} ->
             {ok,SubState} = Module:handle_pop(Task,SubState0),
             {noreply, State#state{state=SubState}, 0};
+        {ok,{task, Task, TaskID, From}} ->
+            Result = Module:handle_pop(Task,SubState0),
+            From ! {TaskID, Result},
+            case Result of
+                {ok, SubState} ->
+                    {noreply, State#state{state=SubState}, 0};
+                _Other ->
+                    {noreply, State, 0}
+            end;
         {ok, stop} ->
             {stop, normal, State};
         {ok, {stop, Pid}} ->
